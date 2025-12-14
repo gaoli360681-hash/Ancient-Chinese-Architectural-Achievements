@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>园林小百科</title>
+  <style>
+    @font-face {
+        font-family: 'HanChengBoBoXingJian';
+        src: url('fonts/HanChengBoBoXingJian/HanChengBoBoXingJian-2.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+    }
+    html,body{
+        height:100%;
+        margin:0;
+        background:#c2e2ff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    myCanvas{
+        display:block;
+        margin:0 auto; 
+        image-rendering:optimizeQuality;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="960" height="540"></canvas>
+
+  <script src="js/functions.js"></script>
+  <script src="js/Objects.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>
