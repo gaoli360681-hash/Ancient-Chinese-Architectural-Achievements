@@ -76,6 +76,13 @@ function buttonStyle(text, x1, y1, x2, y2, button){
     y1 = centerY - height * 0.55;
     y2 = centerY + height * 0.55;
   }
+
+  button.updateStartPoint({x: x1, y: y1});
+  button.updateEndPoint({x: x2, y: y2});
+  // context.save();
+  // context.fillStyle='rgba(0, 0, 0, 1)';
+  // context.fillRect(x1, y1, x2-x1, y2-y1);
+  // context.restore();
   
   document.fonts.load("48px 'HanChengBoBoXingJian'").then(() => {
     context.save();

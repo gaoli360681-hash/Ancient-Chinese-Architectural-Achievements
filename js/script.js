@@ -37,9 +37,9 @@ var squareX = W/2-squareSize-180/4, squareY=H/2-squareSize/2; // 正方形位置
 // 按钮相关
 var mapBtn = new Button('map'),
     setBtn = new Button('set'),
-    startBtn = new Button('newStory'),
-    oldBtn = new Button('memary'),
-    clearBtn = new Button('clear');
+    newStoryBtn = new Button('newStory'),
+    oldMemoryBtn = new Button('oldMemory'),
+    clearMemoryBtn = new Button('clearMemory');
 
 // 对话相关
 var loc = {
@@ -137,13 +137,20 @@ function drawBackgroundWithSquare(){
 function drawSwapButton(){
   buttonStyle('设置', W - W / 8 + 5, 5, W - 5, 60 - 5, setBtn);
   buttonStyle('地图', W / 4 * 3 + 5, 5, W - W / 8 - 5, 60 - 5, mapBtn);
+
+  canvas.addEventListener('click', mapHandler);
+  canvas.addEventListener('click', setHandler);
 }
 
 // 绘制初始页面的按钮
 function drawButton(){
-  buttonStyle('新的故事', W / 8 * 5 + 5, 120 * 2 + 5, W / 8 * 7 - 5, 120 * 2 + 60 - 5, startBtn);
-  buttonStyle('旧的回忆', W / 8 * 5 + 5, 120 * 2 + 60 + 5, W / 8 * 7 - 5, 120 * 2 + 2 * 60 - 5, oldBtn);
-  buttonStyle('清除回忆', W / 8 * 5 + 5, 120 * 2 + 2 * 60 + 5, W / 8 * 7 - 5, 120 * 2 + 3 * 60 - 5, clearBtn);
+  buttonStyle('新的故事', W / 8 * 5 + 5, 120 * 2 + 5, W / 8 * 7 - 5, 120 * 2 + 60 - 5, newStoryBtn);
+  buttonStyle('旧的回忆', W / 8 * 5 + 5, 120 * 2 + 60 + 5, W / 8 * 7 - 5, 120 * 2 + 2 * 60 - 5, oldMemoryBtn);
+  buttonStyle('清除回忆', W / 8 * 5 + 5, 120 * 2 + 2 * 60 + 5, W / 8 * 7 - 5, 120 * 2 + 3 * 60 - 5, clearMemoryBtn);
+
+  canvas.addEventListener('click', newStoryHandler);
+  canvas.addEventListener('click', oldMemoryHandler);
+  canvas.addEventListener('click', clearMemoryHandler);
 }
 
 // 绘制文字
@@ -203,6 +210,34 @@ function drawText(){
   });
 }
 
+// 针对中文的自动换行函数
+function wrapText(context, text, x, y, maxWidth, lineHeight) {
+    // 将文本分割为字符数组（支持中文）
+    const chars = text.split('');
+    let line = '';
+    
+    for (let i = 0; i < chars.length; i++) {
+        const char = chars[i];
+        const testLine = line + char;
+        const metrics = context.measureText(testLine);
+        const testWidth = metrics.width;
+        
+        // 如果当前行宽度超过最大宽度，则绘制当前行并开始新行
+        if (testWidth > maxWidth && line.length > 0) {
+            context.fillText(line, x, y);
+            line = char;  // 开始新行
+            y += lineHeight;
+        } else {
+            line = testLine;
+        }
+    }
+    
+    // 绘制最后一行
+    if (line.length > 0) {
+        context.fillText(line, x, y);
+    }
+}
+
 // 人物对话框
 function npcConvercation(text){
   // 清除对话框区域
@@ -222,8 +257,8 @@ function npcConvercation(text){
     context.textAlign='left';
     context.textBaseline='top';
     context.fillStyle='rgba(11, 9, 9, 1)';
-    context.fillText(text, 35, H / 2 + 115);
-    text = [];
+    // context.fillText(text, 35, H / 2 + 115);
+    wrapText(context, text, 35, H / 2 + 115, 900, 35);
 
     context.restore();
   });
@@ -250,46 +285,24 @@ function npcConvercationWithClick(text){
 // 初始对话及初始页面
 function drawInit(){
   clickHandler = null;
-  
-  function showDialog() {
-    // 清除旧的点击事件
-    if (clickHandler) {
+
+  npcConvercation(text);
+
+  // 创建新的点击事件
+  clickHandler = function(e) {
+    const loc = windowToCanvas(canvas, e.clientX, e.clientY);
+    const x = loc.x;
+    const y = loc.y;
+      
+    // 判断是否点击了对话框区域
+    if(x > 20 && x < 940 && y > H / 2 + 100 && y < H / 2 + 240) {
+      endDialogSequence();
       canvas.removeEventListener('click', clickHandler);
     }
+  };
     
-    // 检查是否还有对话要显示
-    if (text.length === 0) {
-      // 所有对话已显示，清理并显示初始页面
-      clickHandler = null;
-      endDialogSequence();
-      return;
-    }
-    
-    // 显示数组的第一个元素
-    const currentText = text[0];
-    npcConvercation(currentText);
-    
-    // 创建新的点击事件
-    clickHandler = function(e) {
-      const loc = windowToCanvas(canvas, e.clientX, e.clientY);
-      const x = loc.x;
-      const y = loc.y;
-      
-      // 判断是否点击了对话框区域
-      if(x > 20 && x < 940 && y > H / 2 + 100 && y < H / 2 + 240) {
-        // 移除当前显示的元素（数组的第一个）
-        text.shift(); // 直接从原数组中移除
-        // 显示下一句
-        showDialog();
-      }
-    };
-    
-    // 绑定点击事件
-    canvas.addEventListener('click', clickHandler);
-  }
-  
-  // 开始显示对话（从第一个开始）
-  showDialog();
+  // 绑定点击事件
+  canvas.addEventListener('click', clickHandler);
 }
 
 // 初始页面 
@@ -370,7 +383,7 @@ function updateAnimation(timestamp) {
       console.log('点击跳过动画');
       
       // 立即结束动画
-      eyeAnimation.isAnimating = false;
+      eyeAnimation.isAnimating = true;
       
       // 移除点击事件（一次性事件）
       if (eyeAnimation.skipHandler) {
@@ -425,13 +438,8 @@ function finishAnimation() {
   clear(canvas);
   if (backgroundImage.complete) {
     context.drawImage(backgroundImage, 0, 0, W, H);
-    text = [
-      '你终于醒了，欢迎来到拙政园！',
-      '你穿越了，我是你的系统。', 
-      '在这里你可以了解关于许多中国古代建筑的特色，放松身心。', 
-      '跟着地图走，走到最后一站有惊喜哦！'
-    ];
-    drawInit();
+    text = '欢迎来到拙政园。我是您的园境引导者，受时空砚台所托，陪您走完这段园林之旅。集齐五处景点印记，就能解锁专属惊喜。'
+    drawInit(); 
   }
 }
 
@@ -442,6 +450,75 @@ function easeOutSine(t) {
 
 function easeInSine(t) {
   return 1 - Math.cos(t * Math.PI / 2);
+}
+
+// 场景过渡
+function transition(text){
+  clear(canvas);
+      
+  context.save();
+  context.fillStyle='rgba(0, 0, 0, 1)';
+  context.fillRect(0, 0, W, H);
+  context.restore();
+
+  document.fonts.load("70px 'HanChengBoBoXingJian'").then(() => {
+    context.save();
+    
+    context.font="70px 'HanChengBoBoXingJian', sans-serif";
+    context.textAlign='center';
+    context.textBaseline='middle';
+    context.fillStyle='rgba(255, 255, 255, 1)';
+    context.fillText(text, W / 2, H / 2);
+
+    context.restore();
+  });
+}
+
+// 新的记忆界面
+function newStory(){
+  console.log("newStory");
+  clear(canvas);
+
+  canvas.removeEventListener('click', newStoryHandler);
+  canvas.removeEventListener('click', oldMemoryHandler);
+  canvas.removeEventListener('click', clearMemoryHandler);
+
+  context.drawImage(backgroundImage, 0, 0, W, H);
+
+  text = '每到一处核心景点，您先观一段园景轶事，答一道小问题，答对即可解锁印记。咱们先从入园第一站——兰雪堂走起，那边正有新雪初融的景致呢。';
+
+  npcConvercation(text);
+
+  // 创建新的点击事件
+  clickHandler = function(e) {
+    const loc = windowToCanvas(canvas, e.clientX, e.clientY);
+    const x = loc.x;
+    const y = loc.y;
+      
+    // 判断是否点击了对话框区域
+    if(x > 20 && x < 940 && y > H / 2 + 100 && y < H / 2 + 240) {
+      transition('场景1：兰雪堂——初品雅韵');
+      
+      canvas.removeEventListener('click', clickHandler);
+    }
+  };
+    
+  // 绑定点击事件
+  canvas.addEventListener('click', clickHandler);
+
+}
+
+// 旧的回忆界面
+function oldMemory(){
+  console.log("oldMemory");
+}
+
+// 清除回忆界面
+function clearMemory(){
+  console.log('clearMemory');
+
+  // 【++】弹出二次提醒框
+
 }
 
 // .....事件响应函数区.....
@@ -460,45 +537,45 @@ function conversitionClick(text, e){
     canvas.removeEventListener('click', conversationHandler);
   }
 }
-function conversationHandler(e) { conversitionClick(nextText, e); }
+function conversationHandler(e) { conversitionClick(text, e); }
 
-// // 处理页面按钮点击
-// function buttonClick(button, e){
-//   // 获取当前坐标
-//   loc = windowToCanvas(canvas, e.clientX, e.clientY);
-//   x = loc.x;
-//   y = loc.y;
+// 处理页面按钮点击
+function buttonClick(button, e){
+  // 获取当前坐标
+  loc = windowToCanvas(canvas, e.clientX, e.clientY);
+  x = loc.x;
+  y = loc.y;
 
-//   // 判断点击坐标是否在按钮区域
-//   if (x > button.startPoint.x && x < button.endPoint.x && y > button.startPoint.y && y < button.endPoint.y) {
-//     playSound("click");
+  // 判断点击坐标是否在按钮区域
+  if (x > button.startPoint.x && x < button.endPoint.x && y > button.startPoint.y && y < button.endPoint.y) {
+    // playSound("click");
 
-//     switch(button.id){
-//       case "begin":
-//         beginGame();
-//         break;
-//       case "continue":
-//         continueGame();
-//         break;
-//       case "clear":
-//         clearGame();
-//         break;
-//       case "zanting":
-//         // 只有在游戏进行中才能点击暂停按钮
-//         if (currentPage === 'playing') {
-//           zantingGame();
-//         }
-//         break;
-//     }
-//   }
-// }
+    switch(button.id){
+      case "map":
+        console.log('map');
+        break;
+      case "set":
+        console.log('set');
+        break;
+      case "newStory":
+        newStory();
+        break;
+      case "oldMemory":
+        oldMemory();
+        break;
+      case 'clearMemory':
+        clearMemory();
+        break;
+    }
+  }
+}
 
-// // 定义具名函数
-// function beginHandler(e) { buttonClick(beginButton, e); }
-// function continueHandler(e) { buttonClick(continueButton, e); }
-// function clearHandler(e) { buttonClick(clearButton, e); }
-// function zantingHandler(e) { buttonClick(zanting, e); }
-// function continueHandler2(e) { buttonClick(continueButton2, e); }
+// 定义具名函数
+function mapHandler(e) { buttonClick(mapBtn, e); }
+function setHandler(e) { buttonClick(setBtn, e); }
+function newStoryHandler(e) { buttonClick(newStoryBtn, e); }
+function oldMemoryHandler(e) { buttonClick(oldMemoryBtn, e); }
+function clearMemoryHandler(e) { buttonClick(clearMemoryBtn, e); }
 
 // .....初始化函数区.....
 function init() {
