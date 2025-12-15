@@ -27,8 +27,10 @@ var eyeAnimation = {
 // 图片资源
 var backgroundImage = new Image(),
     npc = new Image();
+    lanxuetang = new Image();
 backgroundImage.src = 'images/封面.jpg';
 npc.src = 'images/系统.png';
+lanxuetang.src = 'images/兰雪堂.jpg';
 
 // 正方形参数
 var squareSize = 300; // 正方形边长
@@ -452,25 +454,77 @@ function easeInSine(t) {
   return 1 - Math.cos(t * Math.PI / 2);
 }
 
-// 场景过渡
-function transition(text){
-  clear(canvas);
-      
-  context.save();
-  context.fillStyle='rgba(0, 0, 0, 1)';
-  context.fillRect(0, 0, W, H);
-  context.restore();
-
-  document.fonts.load("70px 'HanChengBoBoXingJian'").then(() => {
-    context.save();
+// 场景过渡【++】可以尝试一下用精灵实现
+function transition(text) {
+  return new Promise((resolve) => {
+    let opacity = 0;
+    let phase = 'fadeIn'; // 三个阶段: fadeIn → hold → fadeOut → clear
+    let startTime = null;
     
-    context.font="70px 'HanChengBoBoXingJian', sans-serif";
-    context.textAlign='center';
-    context.textBaseline='middle';
-    context.fillStyle='rgba(255, 255, 255, 1)';
-    context.fillText(text, W / 2, H / 2);
-
-    context.restore();
+    function animate(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const fadeDuration = 1000; // 每个淡入淡出阶段1秒
+        const holdDuration = 500; // 保持显示1.5秒
+        
+        if (phase === 'fadeIn') {
+            // 淡入阶段：透明度0 → 1
+            opacity = Math.min(elapsed / fadeDuration, 1);
+            
+            if (opacity >= 1) {
+                opacity = 1;
+                phase = 'hold';
+                startTime = timestamp; // 重置计时器
+            }
+        } 
+        else if (phase === 'hold') {
+            // 保持阶段：维持完全可见
+            if (elapsed >= holdDuration) {
+                phase = 'fadeOut';
+                startTime = timestamp; // 重置计时器
+            }
+        }
+        else if (phase === 'fadeOut') {
+            // 淡出阶段：透明度1 → 0
+            opacity = Math.max(1 - (elapsed / fadeDuration), 0);
+            
+            if (opacity <= 0) {
+                opacity = 0;
+                phase = 'clear';
+            }
+        }
+        
+        // 绘制当前帧
+        context.clearRect(0, 0, W, H);
+        
+        // 绘制黑色背景
+        context.fillStyle = 'rgba(0, 0, 0, 1)';
+        context.fillRect(0, 0, W, H);
+        
+        // 绘制文字（根据当前透明度）
+        if (phase !== 'clear') {
+            context.save();
+            context.font = "70px 'HanChengBoBoXingJian', sans-serif";
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+            context.fillText(text, W / 2, H / 2);
+            context.restore();
+        }
+        
+        // 淡出完成后清屏
+        if (phase === 'clear') {
+            resolve(); // Promise完成
+            return;
+        }
+        
+        requestAnimationFrame(animate);
+    }
+    
+    // 加载字体并开始动画
+    document.fonts.load("70px 'HanChengBoBoXingJian'").then(() => {
+        requestAnimationFrame(animate);
+    });
   });
 }
 
@@ -497,9 +551,34 @@ function newStory(){
       
     // 判断是否点击了对话框区域
     if(x > 20 && x < 940 && y > H / 2 + 100 && y < H / 2 + 240) {
-      transition('场景1：兰雪堂——初品雅韵');
-      
       canvas.removeEventListener('click', clickHandler);
+      transition('场景1：兰雪堂——初品雅韵').then(() => {
+        console.log('场景切换完成');
+        clear(canvas);
+        context.drawImage(lanxuetang, 0, 0, W, H);
+        drawSwapButton();
+        console.log(text);
+        
+        text = '这兰雪堂是东部园区的门户，您先看看这段视频，了解它的妙处。';
+
+        npcConvercation(text);
+        // 创建新的点击事件
+        clickHandler = function(e) {
+          const loc = windowToCanvas(canvas, e.clientX, e.clientY);
+          const x = loc.x;
+          const y = loc.y;
+            
+          // 判断是否点击了对话框区域
+          if(x > 20 && x < 940 && y > H / 2 + 100 && y < H / 2 + 240) {
+            console.log('play video');
+            // 【++】视频的播放以及游戏的实现
+          }
+        };
+        
+        // 绑定点击事件
+        canvas.addEventListener('click', clickHandler);
+
+      });
     }
   };
     
