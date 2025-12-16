@@ -9,8 +9,10 @@
 var canvas = document.getElementById('myCanvas'), //获取canvas元素
     context = canvas.getContext('2d'); //获取2d画图环境
 
-let W = canvas.width,
-    H = canvas.height;
+// --- 定义常量 ---
+const FPS = 24;
+const W = canvas.width;
+const H = canvas.height;
 
 // 三次睁眼动画
 var eyeAnimation = {
@@ -26,11 +28,29 @@ var eyeAnimation = {
 
 // 图片资源
 var backgroundImage = new Image(),
-    npc = new Image();
-    lanxuetang = new Image();
+    npc = new Image(),
+    lanxuetangImage = new Image(),
+    xiaofeihongImage = new Image(),
+    ouxiangxieImage = new Image();
 backgroundImage.src = 'images/封面.jpg';
 npc.src = 'images/系统.png';
-lanxuetang.src = 'images/兰雪堂.jpg';
+lanxuetangImage.src = 'images/兰雪堂.jpg';
+xiaofeihongImage.src = 'images/小飞虹.jpg';
+ouxiangxieImage.src = 'images/藕香榭.png';
+
+// 视频资源
+var lanxuetangVideo = document.getElementById('lanxuetangVideo'),
+    xiaofeihongVideo = document.getElementById('xiaofeihongVideo'),
+    ouxiangxieVideo = document.getElementById('ouxiangxieVideo');
+
+// 视频控制相关
+var videoX = 10,
+  videoY = 10,
+  videoHeight = 340,
+  videoWidth = videoHeight / 9 * 16;
+let isInVideoMode = false,
+    videoClickHandler = null,
+    videoFrame;
 
 // 正方形参数
 var squareSize = 300; // 正方形边长
@@ -48,7 +68,7 @@ var loc = {
   x: 0,
   y: 0
 };
-var x, y, nextText, clickHandler = null;
+var x, y, clickHandler = null;
 var text = new Array();
 
 // ..................函数定义区.......................
@@ -157,59 +177,57 @@ function drawButton(){
 
 // 绘制文字
 function drawText(){
-  document.fonts.load("70px 'HanChengBoBoXingJian'").then(() => {
-    context.save();
+  context.save();
 
-    // 创建颜色节点
-    const colorStops = [
-      { position: 0, color: '#ff6161ff'},
-      { position: 0.2, color: '#ffcc8dff'},
-      { position: 0.4, color: '#F7DC6F' },
-      { position: 0.6, color: '#d8ffa4ff' },
-      { position: 0.8, color: '#86e7c7ff' },
-      { position: 1, color: '#8abdffff' }
-    ];
+  // 创建颜色节点
+  const colorStops = [
+    { position: 0, color: '#ff6161ff'},
+    { position: 0.2, color: '#ffcc8dff'},
+    { position: 0.4, color: '#F7DC6F' },
+    { position: 0.6, color: '#d8ffa4ff' },
+    { position: 0.8, color: '#86e7c7ff' },
+    { position: 1, color: '#8abdffff' }
+  ];
 
-    context.font = "70px 'HanChengBoBoXingJian', sans-serif";
-    const text = "园林小百科";
-    const metrics = context.measureText(text);
-    const textWidth = metrics.width;
+  context.font = "70px 'HanChengBoBoXingJian', sans-serif";
+  const text = "园林小百科";
+  const metrics = context.measureText(text);
+  const textWidth = metrics.width;
 
-    // 计算文字实际位置和尺寸
-    const textX = W / 4 * 3;
-    const textY = 120 + 60;
-    const fontSize = 70; // 根据字体设置
+  // 计算文字实际位置和尺寸
+  const textX = W / 4 * 3;
+  const textY = 120 + 60;
+  const fontSize = 70; // 根据字体设置
 
-    // 计算文字边界框
-    const bounds = {
-        left: textX - textWidth / 2,
-        top: textY - fontSize / 2,
-        right: textX + textWidth / 2,
-        bottom: textY + fontSize / 2,
-        width: textWidth,
-        height: fontSize
-    };
+  // 计算文字边界框
+  const bounds = {
+    left: textX - textWidth / 2,
+    top: textY - fontSize / 2,
+    right: textX + textWidth / 2,
+    bottom: textY + fontSize / 2,
+    width: textWidth,
+    height: fontSize
+  };
 
-    // 创建对角线渐变（左上到右下）
-    const gradient = context.createLinearGradient(
-        bounds.left, bounds.top,
-        bounds.right, bounds.bottom
-    );
+  // 创建对角线渐变（左上到右下）
+  const gradient = context.createLinearGradient(
+    bounds.left, bounds.top,
+    bounds.right, bounds.bottom
+  );
 
-    // 添加颜色节点
-    colorStops.forEach(stop => {
-        gradient.addColorStop(stop.position, stop.color);
-    });
-
-    // 应用渐变
-    context.fillStyle = gradient;
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-
-    context.fillText(text, textX, textY);
-
-    context.restore();
+  // 添加颜色节点
+  colorStops.forEach(stop => {
+    gradient.addColorStop(stop.position, stop.color);
   });
+
+  // 应用渐变
+  context.fillStyle = gradient;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+
+  context.fillText(text, textX, textY);
+
+  context.restore();
 }
 
 // 针对中文的自动换行函数
@@ -259,7 +277,6 @@ function npcConvercation(text){
     context.textAlign='left';
     context.textBaseline='top';
     context.fillStyle='rgba(11, 9, 9, 1)';
-    // context.fillText(text, 35, H / 2 + 115);
     wrapText(context, text, 35, H / 2 + 115, 900, 35);
 
     context.restore();
@@ -277,13 +294,6 @@ function npcConvercation(text){
   });
 }
 
-// 对话框（加点击版）
-function npcConvercationWithClick(text){
-  npcConvercation(text);
-
-  canvas.addEventListener('click', conversationHandler);
-}
-
 // 初始对话及初始页面
 function drawInit(){
   clickHandler = null;
@@ -292,9 +302,9 @@ function drawInit(){
 
   // 创建新的点击事件
   clickHandler = function(e) {
-    const loc = windowToCanvas(canvas, e.clientX, e.clientY);
-    const x = loc.x;
-    const y = loc.y;
+    loc = windowToCanvas(canvas, e.clientX, e.clientY);
+    x = loc.x;
+    y = loc.y;
       
     // 判断是否点击了对话框区域
     if(x > 20 && x < 940 && y > H / 2 + 100 && y < H / 2 + 240) {
@@ -440,7 +450,7 @@ function finishAnimation() {
   clear(canvas);
   if (backgroundImage.complete) {
     context.drawImage(backgroundImage, 0, 0, W, H);
-    text = '欢迎来到拙政园。我是您的园境引导者，受时空砚台所托，陪您走完这段园林之旅。集齐五处景点印记，就能解锁专属惊喜。'
+    text = '欢迎来到拙政园。我是您的园境引导者，受时空砚台所托，陪您走完这段园林之旅。集齐三处景点印记，就能解锁专属惊喜。'
     drawInit(); 
   }
 }
@@ -528,6 +538,197 @@ function transition(text) {
   });
 }
 
+// 绘制视频
+function drawFirstVideoFrame(video){
+  if (video.readyState >= 2) {
+    // 如果视频已经就绪，直接绘制
+    drawCurrentVideoFrame(video);
+  } else {
+    // 否则等待视频就绪后绘制
+    video.addEventListener('canplay', function(){drawCurrentVideoFrame(video);}, {
+        once: true
+    });
+  }
+}
+
+// 绘制当前视频帧
+function drawCurrentVideoFrame(video) {
+    isInVideoMode = true;
+    
+    // 移除旧的点击事件
+    if (videoClickHandler) {
+        canvas.removeEventListener('click', videoClickHandler);
+    }
+    
+    videoClickHandler = function(e) {
+        loc = windowToCanvas(canvas, e.clientX, e.clientY);
+        x = loc.x, y = loc.y;
+        
+        if (x >= videoX && x <= videoX + videoWidth && y >= videoY && y <= videoY + videoHeight) {
+            if (video.paused || video.ended) {
+                video.play();
+            } else {
+                video.pause();
+            }
+        }
+    };
+    
+    drawVideoFrame(video);
+    canvas.addEventListener('click', videoClickHandler);
+}
+
+// 视频动画
+function drawVideoFrame(video) {
+  // 视频区域
+  context.drawImage(video, videoX, videoY, videoWidth, videoHeight);
+
+  // 视频边框
+  context.save();
+  context.strokeStyle='rgba(255, 255, 255, 1)';
+  context.strokeRect(videoX, videoY, videoWidth, videoHeight);
+  context.restore();
+        
+  if (video.paused || video.ended) {
+    // 绘制播放按钮
+    const centerX = videoX + videoWidth / 2;
+    const centerY = videoY + videoHeight / 2;
+    context.fillStyle = 'rgba(0,0,0,0.7)';
+    context.beginPath();
+    context.arc(centerX, centerY, 35, 0, Math.PI*2);
+    context.fill();
+            
+    context.fillStyle = '#FFF';
+    context.beginPath();
+    context.moveTo(centerX-12, centerY-18);
+    context.lineTo(centerX-12, centerY+18);
+    context.lineTo(centerX+20, centerY);
+    context.closePath();
+    context.fill();
+  }
+  // 继续绘制下一帧
+  videoFrame = requestAnimationFrame(function(){
+    drawVideoFrame(video);
+  });
+}
+
+// 游戏【++】这版是ai写的，仅作调试使用。不同场景可尝试不同游戏
+function beginGame() {
+  return new Promise((resolve) => {
+    console.log('开始游戏');
+    // 移除旧的点击事件
+    if (videoClickHandler) {
+      canvas.removeEventListener('click', videoClickHandler);
+    }
+    
+    // 移除旧的对话框点击事件
+    if (clickHandler) {
+      canvas.removeEventListener('click', clickHandler);
+    }
+    
+    // 清除画布【++】需要则无需注释
+    // clear(canvas);
+    
+    // 绘制游戏背景
+    context.fillStyle = 'rgba(50, 50, 50, 0.9)';
+    context.fillRect(0, 0, W, H);
+    
+    // 绘制游戏标题
+    context.font = "40px 'HanChengBoBoXingJian', sans-serif";
+    context.fillStyle = '#FFFFFF';
+    context.textAlign = 'center';
+    context.fillText('兰雪堂知识问答', W / 2, 80);
+    
+    // 设置问题【++】不同场景问题不同
+    context.font = "28px 'HanChengBoBoXingJian', sans-serif";
+    context.fillStyle = '#F0F0F0';
+    context.textAlign = 'left';
+    
+    const question = "兰雪堂的名称来源于哪句诗？";
+    const options = [
+      "A. 兰生幽谷，雪落无声",
+      "B. 独立天地间，清风洒兰雪",
+      "C. 兰雪堂前春意早",
+      "D. 兰雪相映，堂前生辉"
+    ];
+    context.fillText(question, 100, 150);
+    
+    // 绘制选项
+    const optionYStart = 220;
+    const optionSpacing = 60;
+    
+    options.forEach((option, index) => {
+      const y = optionYStart + index * optionSpacing;
+      context.fillText(option, 150, y);
+      
+      // 绘制选项框（可点击区域）
+      context.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      context.strokeRect(120, y - 30, W - 240, 45);
+    });
+    
+    // 正确答案（假设是B）
+    const correctAnswer = 1; // B选项
+    
+    
+    // 创建游戏点击事件处理器
+    const gameClickHandler = function(e) {
+      const loc = windowToCanvas(canvas, e.clientX, e.clientY);
+      const x = loc.x;
+      const y = loc.y;
+      
+      // 检查是否点击了选项区域
+      options.forEach((option, index) => {
+        const optionY = optionYStart + index * optionSpacing;
+        const optionRect = {
+          x: 120,
+          y: optionY - 30,
+          width: W - 240,
+          height: 45
+        };
+        
+        if (x >= optionRect.x && x <= optionRect.x + optionRect.width &&
+            y >= optionRect.y && y <= optionRect.y + optionRect.height) {
+          
+          // 移除点击事件
+          canvas.removeEventListener('click', gameClickHandler);
+          
+          // 显示答案反馈
+          if (index === correctAnswer) {
+            // 回答正确
+            context.fillStyle = 'rgba(0, 200, 0, 0.8)';
+            context.fillRect(0, H - 100, W, 100);
+            context.fillStyle = '#FFFFFF';
+            context.font = "30px 'HanChengBoBoXingJian', sans-serif";
+            context.textAlign = 'center';
+            context.fillText('回答正确！获得兰雪堂印记', W / 2, H - 50);
+            
+            // 等待2秒后继续
+            setTimeout(() => {
+              resolve(true); // 游戏完成，返回成功
+            }, 2000);
+          } else {
+            // 回答错误
+            context.fillStyle = 'rgba(200, 0, 0, 0.8)';
+            context.fillRect(0, H - 100, W, 100);
+            context.fillStyle = '#FFFFFF';
+            context.font = "30px 'HanChengBoBoXingJian', sans-serif";
+            context.textAlign = 'center';
+            context.fillText('回答错误，请再试一次', W / 2, H - 50);
+            
+            // 等待2秒后重新显示问题
+            setTimeout(() => {
+              beginGame().then(resolve);
+            }, 2000);
+          }
+        }
+      });
+    };
+    
+    // 绑定游戏点击事件
+    canvas.addEventListener('click', gameClickHandler);
+    
+  });
+}
+
 // 新的记忆界面
 function newStory(){
   console.log("newStory");
@@ -545,39 +746,16 @@ function newStory(){
 
   // 创建新的点击事件
   clickHandler = function(e) {
-    const loc = windowToCanvas(canvas, e.clientX, e.clientY);
-    const x = loc.x;
-    const y = loc.y;
+    loc = windowToCanvas(canvas, e.clientX, e.clientY);
+    x = loc.x;
+    y = loc.y;
       
     // 判断是否点击了对话框区域
     if(x > 20 && x < 940 && y > H / 2 + 100 && y < H / 2 + 240) {
       canvas.removeEventListener('click', clickHandler);
       transition('场景1：兰雪堂——初品雅韵').then(() => {
         console.log('场景切换完成');
-        clear(canvas);
-        context.drawImage(lanxuetang, 0, 0, W, H);
-        drawSwapButton();
-        console.log(text);
-        
-        text = '这兰雪堂是东部园区的门户，您先看看这段视频，了解它的妙处。';
-
-        npcConvercation(text);
-        // 创建新的点击事件
-        clickHandler = function(e) {
-          const loc = windowToCanvas(canvas, e.clientX, e.clientY);
-          const x = loc.x;
-          const y = loc.y;
-            
-          // 判断是否点击了对话框区域
-          if(x > 20 && x < 940 && y > H / 2 + 100 && y < H / 2 + 240) {
-            console.log('play video');
-            // 【++】视频的播放以及游戏的实现
-          }
-        };
-        
-        // 绑定点击事件
-        canvas.addEventListener('click', clickHandler);
-
+        lanxuetang();
       });
     }
   };
@@ -587,7 +765,205 @@ function newStory(){
 
 }
 
-// 旧的回忆界面
+// 兰雪堂页面
+function lanxuetang(){
+  // 移除旧的点击事件
+  if (videoClickHandler) {
+    canvas.removeEventListener('click', videoClickHandler);
+  }
+  
+  clear(canvas);
+  context.drawImage(lanxuetangImage, 0, 0, W, H);
+  drawSwapButton();
+   
+  text = '这兰雪堂是东部园区的门户，您先看看这段视频，了解它的妙处。';
+  
+  npcConvercation(text);
+  // 创建新的点击事件
+  clickHandler = function(e) {
+    loc = windowToCanvas(canvas, e.clientX, e.clientY);
+    x = loc.x;
+    y = loc.y;
+          
+    // 判断是否点击了对话框区域
+    if(x > 20 && x < 940 && y > H / 2 + 100 && y < H / 2 + 240) {
+      canvas.removeEventListener('click', clickHandler);
+      console.log('play video');
+      // 视频的播放
+      drawFirstVideoFrame(lanxuetangVideo);
+      // 【++】游戏的实现
+      console.log('game');
+      lanxuetangVideo.onended = function(){ 
+        cancelAnimationFrame(videoFrame);
+        beginGame().then(() => {
+          // 移除旧的点击事件
+          if (videoClickHandler) {
+            console.log('videoClickHander');
+            canvas.removeEventListener('click', videoClickHandler);
+          }
+
+          // 点击后进入下一个场景
+          let onclick = function(e) {
+            canvas.removeEventListener('click', onclick);
+            transition('场景2：小飞虹——廊桥卧波').then(() => {
+              console.log('场景切换完成');
+              xiaofeihong();
+            });
+          }
+          canvas.addEventListener('click', onclick);
+        });
+      }
+    }
+  };
+    
+  // 绑定点击事件
+  canvas.addEventListener('click', clickHandler);
+
+}
+
+// 小飞虹页面
+function xiaofeihong(){
+  // 移除旧的点击事件
+  if (videoClickHandler) {
+    canvas.removeEventListener('click', videoClickHandler);
+  }
+
+  clear(canvas);
+  context.drawImage(xiaofeihongImage, 0, 0, W, H);
+  drawSwapButton();
+
+  text = '这是江南园林少见的“廊桥”，石与木的结合藏着大巧思，看视频找答案。';
+  npcConvercation(text);
+  // 创建新的点击事件
+  clickHandler = function(e) {
+    loc = windowToCanvas(canvas, e.clientX, e.clientY);
+    x = loc.x;
+    y = loc.y;
+          
+    // 判断是否点击了对话框区域
+    if(x > 20 && x < 940 && y > H / 2 + 100 && y < H / 2 + 240) {
+      canvas.removeEventListener('click', clickHandler);
+      console.log('play video');
+      // 视频的播放
+      drawFirstVideoFrame(xiaofeihongVideo);
+      // 【++】游戏的实现
+      console.log('game');
+      xiaofeihongVideo.onended = function(){ 
+        cancelAnimationFrame(videoFrame);
+        beginGame().then(() => {
+          // 移除旧的点击事件
+          if (videoClickHandler) {
+            console.log('videoClickHander');
+            canvas.removeEventListener('click', videoClickHandler);
+          }
+
+          // 点击后进入下一个场景
+          let onclick = function(e) {
+            canvas.removeEventListener('click', onclick);
+            transition('场景3：藕香榭——荷风满榭').then(() => {
+              console.log('场景切换完成');
+              ouxiangxie();
+            });
+          }
+          canvas.addEventListener('click', onclick);
+        });
+      }
+    }
+  };
+    
+  // 绑定点击事件
+  canvas.addEventListener('click', clickHandler);
+  
+}
+
+// 藕香榭页面
+function ouxiangxie(){
+  // 移除旧的点击事件
+  if (videoClickHandler) {
+    canvas.removeEventListener('click', videoClickHandler);
+  }
+
+  clear(canvas);
+  context.drawImage(ouxiangxieImage, 0, 0, W, H);
+  drawSwapButton();
+
+  text = '这榭是赏荷的绝佳处，名字里都带着荷香，看视频找它的特别设计。';
+  npcConvercation(text);
+  // 创建新的点击事件
+  clickHandler = function(e) {
+    loc = windowToCanvas(canvas, e.clientX, e.clientY);
+    x = loc.x;
+    y = loc.y;
+          
+    // 判断是否点击了对话框区域
+    if(x > 20 && x < 940 && y > H / 2 + 100 && y < H / 2 + 240) {
+      canvas.removeEventListener('click', clickHandler);
+      console.log('play video');
+      // 视频的播放
+      drawFirstVideoFrame(ouxiangxieVideo);
+      // 【++】游戏的实现
+      console.log('game');
+      ouxiangxieVideo.onended = function(){ 
+        cancelAnimationFrame(videoFrame);
+        beginGame().then(() => {
+          imagesOneByOne();
+        });
+      }
+    }
+  };
+    
+  // 绑定点击事件
+  canvas.addEventListener('click', clickHandler);
+}
+
+// 图片轮播页面
+function imagesOneByOne(){
+
+  clear(canvas);
+
+  context.save();
+  context.fillStyle='rgba(169, 169, 169, 1)';
+  context.fillRect(0, 0, W, H);
+  drawSwapButton();
+  
+  // 【++】精灵实现图片轮播
+  imagesPlay();
+
+  text = '（光影渐散，声音悠远）从兰雪亭的山墙到倒影楼的楼板，您读懂的不仅是建筑形态，更是古人藏在结构里的力学智慧与实用哲学。恭喜您，获得园林小百科称号！';
+  npcConvercation(text);
+  // 创建新的点击事件
+  clickHandler = function(e) {
+    loc = windowToCanvas(canvas, e.clientX, e.clientY);
+    x = loc.x;
+    y = loc.y;
+          
+    // 判断是否点击了对话框区域
+    if(x > 20 && x < 940 && y > H / 2 + 100 && y < H / 2 + 240) {
+      canvas.removeEventListener('click', clickHandler);
+      endAll();
+    }
+  };
+    
+  // 绑定点击事件
+  canvas.addEventListener('click', clickHandler);
+}
+
+// 【++】图片轮播
+function imagesPlay(){
+  console.log('图片轮播');
+}
+
+// 结束页面
+function endAll(){
+  console.log('endAll');
+  
+  drawDarkMask();
+
+  // 【++】荣誉称号动画
+  
+}
+
+// 旧的回忆界面【++】本地记录等需要添加
 function oldMemory(){
   console.log("oldMemory");
 }
@@ -601,22 +977,6 @@ function clearMemory(){
 }
 
 // .....事件响应函数区.....
-
-// 处理对话点击事件
-function conversitionClick(text, e){
-  // 获取当前坐标
-  loc = windowToCanvas(canvas, e.clientX, e.clientY);
-  x = loc.x;
-  y = loc.y;
-
-  // 判断当前坐标是否在对话框区域
-  if(x > 20 && x < 940 && y > H / 2 + 100 && y < H / 2 + 240){
-    console.log('click conversation');
-    npcConvercation(text);
-    canvas.removeEventListener('click', conversationHandler);
-  }
-}
-function conversationHandler(e) { conversitionClick(text, e); }
 
 // 处理页面按钮点击
 function buttonClick(button, e){
