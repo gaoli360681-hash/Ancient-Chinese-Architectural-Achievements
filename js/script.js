@@ -50,6 +50,7 @@ var videoX = 10,
   videoWidth = videoHeight / 9 * 16;
 let isInVideoMode = false,
     videoClickHandler = null,
+    currentVideo = null,
     videoFrame;
 
 // 正方形参数
@@ -554,6 +555,7 @@ function drawFirstVideoFrame(video){
 // 绘制当前视频帧
 function drawCurrentVideoFrame(video) {
     isInVideoMode = true;
+    currentVideo = video;
     
     // 移除旧的点击事件
     if (videoClickHandler) {
@@ -575,6 +577,61 @@ function drawCurrentVideoFrame(video) {
     
     drawVideoFrame(video);
     canvas.addEventListener('click', videoClickHandler);
+
+    // 设置键盘控制
+    setupKeyboardControls(video);
+}
+
+// 设置键盘控制
+function setupKeyboardControls(video) {
+    // 移除旧的键盘事件（防止重复绑定）
+    document.removeEventListener('keydown', videoKeyHandler);
+    
+    var videoKeyHandler = function(e) {
+        // 只有在视频模式下才响应键盘控制
+        if (!isInVideoMode || !currentVideo) return;
+        
+        e.preventDefault(); // 防止默认行为
+        
+        console.log(e.key);
+        switch(e.key) {
+            case 'ArrowLeft': // 快退5秒
+                if (currentVideo.duration) {
+                    currentVideo.currentTime = Math.max(0, currentVideo.currentTime - 5);
+                }
+                break;
+                
+            case 'ArrowRight': // 快进5秒
+                if (currentVideo.duration) {
+                    currentVideo.currentTime = Math.min(
+                        currentVideo.duration, 
+                        currentVideo.currentTime + 5
+                    );
+                }
+                break;
+                
+            case 'ArrowUp': // 快进10秒
+                if (currentVideo.duration) {
+                    currentVideo.currentTime = Math.min(
+                        currentVideo.duration, 
+                        currentVideo.currentTime + 10
+                    );
+                }
+                break;
+                
+            case 'ArrowDown': // 快退10秒
+                if (currentVideo.duration) {
+                    currentVideo.currentTime = Math.max(
+                        0, 
+                        currentVideo.currentTime - 10
+                    );
+                }
+                break;
+        }
+    };
+    
+    // 添加键盘事件监听器
+    document.addEventListener('keydown', videoKeyHandler);
 }
 
 // 视频动画
