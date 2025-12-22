@@ -50,7 +50,6 @@ var videoX = 10,
   videoWidth = videoHeight / 9 * 16;
 let isInVideoMode = false,
     videoClickHandler = null,
-    currentVideo = null,
     videoFrame;
 
 // 正方形参数
@@ -555,7 +554,6 @@ function drawFirstVideoFrame(video){
 // 绘制当前视频帧
 function drawCurrentVideoFrame(video) {
     isInVideoMode = true;
-    currentVideo = video;
     
     // 移除旧的点击事件
     if (videoClickHandler) {
@@ -589,41 +587,41 @@ function setupKeyboardControls(video) {
     
     var videoKeyHandler = function(e) {
         // 只有在视频模式下才响应键盘控制
-        if (!isInVideoMode || !currentVideo) return;
+        if (!isInVideoMode || !video) return;
         
         e.preventDefault(); // 防止默认行为
         
         console.log(e.key);
         switch(e.key) {
             case 'ArrowLeft': // 快退5秒
-                if (currentVideo.duration) {
-                    currentVideo.currentTime = Math.max(0, currentVideo.currentTime - 5);
+                if (video.duration) {
+                    video.currentTime = Math.max(0, video.currentTime - 5);
                 }
                 break;
                 
             case 'ArrowRight': // 快进5秒
-                if (currentVideo.duration) {
-                    currentVideo.currentTime = Math.min(
-                        currentVideo.duration, 
-                        currentVideo.currentTime + 5
+                if (video.duration) {
+                    video.currentTime = Math.min(
+                        video.duration, 
+                        video.currentTime + 5
                     );
                 }
                 break;
                 
             case 'ArrowUp': // 快进10秒
-                if (currentVideo.duration) {
-                    currentVideo.currentTime = Math.min(
-                        currentVideo.duration, 
-                        currentVideo.currentTime + 10
+                if (video.duration) {
+                    video.currentTime = Math.min(
+                        video.duration, 
+                        video.currentTime + 10
                     );
                 }
                 break;
                 
             case 'ArrowDown': // 快退10秒
-                if (currentVideo.duration) {
-                    currentVideo.currentTime = Math.max(
+                if (video.duration) {
+                    video.currentTime = Math.max(
                         0, 
-                        currentVideo.currentTime - 10
+                        video.currentTime - 10
                     );
                 }
                 break;
