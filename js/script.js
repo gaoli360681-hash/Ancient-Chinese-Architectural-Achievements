@@ -784,6 +784,27 @@ function beginGame() {
   });
 }
 
+// 拼图游戏【++】可放在beginGame里面，也可单独放
+function pintuGame(image, sizeX, sizeY){
+  return new Promise((resolve) => {
+    clear(canvas);
+
+    const pintu = new Piece(image, sizeX, sizeY);
+    pintu.initPieces();
+    pintu.draw(canvas);
+
+    var piecesClick = function(e){
+      pintu.clickHandler(canvas, e);
+      if(pintu.checkComplete()){
+        canvas.removeEventListener('click', piecesClick);
+        resolve(true);
+      }
+    };
+
+    canvas.addEventListener('click', piecesClick);
+  });
+}
+
 // 新的记忆界面
 function newStory(){
   console.log("newStory");
